@@ -1,6 +1,5 @@
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from flask import Flask, request, jsonify
 import base64
 from PIL import Image
 from io import BytesIO
@@ -11,23 +10,25 @@ app = Flask(__name__)
 CORS(app)  # 启用CORS插件
 
 
-
-
-
 @app.route('/face_detect', methods=['GET', 'POST'])
 def hello():
     try:
-        json_data = request.json
+        name = None
+        json_data = request.files
         json_data = dict(json_data)
+        state_data = dict(request.form)
+        cam_state = eval(state_data['state'])
+        if cam_state:
+            name = state_data['name']
         images = []
         for image_idx in json_data:
-            image_data = base64.b64decode(json_data[image_idx][1])
+            print(json_data[image_idx])
+            image_data = base64.b64decode(json_data[image_idx].read())
             image = Image.open(BytesIO(image_data))
             images.append(np.array(image))
-        state = RoboticMTCNN.process_images(images)
+        state = RoboticMTCNN.process_images(images, cam_state, name)
 
-        return jsonify({"message": "Image received and processed successfully",
-                        "state": state})
+        return jsonify(state)
     except Exception as e:
         return jsonify({"error format": str(e)})
 

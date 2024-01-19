@@ -7,7 +7,8 @@ import numpy as np
 
 mtcnn = MTCNN(keep_all=True, post_process=False)
 vggmodel = vgg16(pretrained='vggface2').eval()
-feature_vectors = np.load('./SaveFace/FaceFeature.npy')
+# feature_vectors = np.load('./SaveFace/FaceFeature.npy')
+feature_vectors = np.load('WOA7018-main/src/WOA7018/SaveFace/FaceFeature.npy')
 
 
 def create_folder(folder_path):
@@ -48,7 +49,7 @@ def process_images(images, state=0, name=None):
         if boxes is not None:
             # 一张图片多张脸只保存第一张
             face = Image.fromarray(img).crop(boxes[0])
-            plt.imshow(face)
+            # plt.imshow(face)
             face_tensor = mtcnn(face)
             # 转化为人脸特征向量
             feature_vector = vggmodel(face_tensor).detach().numpy()
@@ -57,7 +58,7 @@ def process_images(images, state=0, name=None):
 
             # 状态为1时,生成人名文件夹,保存人脸图片
             if state == 1 and name != None:
-                folder_name = f'./SaveFace/{name}'
+                folder_name = f'WOA7018-main/src/WOA7018/SaveFace/{name}'
                 create_folder(folder_name)
                 # 将裁剪部分人脸保存在文件中
                 face.save(f'{folder_name}/{idx}.jpg')
@@ -75,11 +76,11 @@ def process_images(images, state=0, name=None):
                 similarities = cosine_similarity(
                     feature_vectors[:,:-1].astype(np.float64), feature_vector[0])
                 print(similarities)
-                if np.max(similarities) > 0.95:
+                if np.max(similarities) > 0.93:
                     index = np.argmax(similarities)
                     prob = np.max(similarities)
                     each_label.append((feature_vectors[index, -1], prob))
-                    return 0, feature_vectors[index, -1]
+                    return {'result': 0, 'name':feature_vectors[index, -1]}
                 else:
                     continue
         # 该图片未检测到人脸 下一张
@@ -89,13 +90,13 @@ def process_images(images, state=0, name=None):
     if state == 0:
         # 所有图片未检测到人脸
         if flag == 0:
-            return 1
+            return {'result': 1, 'name':'', "message":"No Face Deteect in Each Image"}
         # 检测到人脸 但与数据库不匹配
         if len(each_label) == 0:
-            return 1
+            return {'result': 1, 'name':'', "message":"Invalid Acessce"}
 
     # state = 1, 进行人脸录入 保存向量
-    np.save('./SaveFace/FaceFeature.npy', feature_vectors)
-    return 0
+    np.save('WOA7018-main/src/WOA7018/SaveFace/FaceFeature.npy', feature_vectors)
+    return {'result': 0, 'name':name}
 
 
